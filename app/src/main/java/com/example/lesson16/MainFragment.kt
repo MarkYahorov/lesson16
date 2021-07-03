@@ -12,19 +12,23 @@ import android.widget.Toast
 
 class MainFragment : Fragment() {
 
+    companion object{
+        const val TAG = "MAIN_FRAGMENT"
+    }
+
     private lateinit var editText: EditText
     private lateinit var goToNextBtn: Button
 
-    interface sendTextForEdits {
-        fun onSave(string: String)
+    interface ButtonClickListener {
+        fun onClick(string: String)
     }
 
-    var sendText: sendTextForEdits? = null
+    var sendText: ButtonClickListener? = null
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
         try {
-            sendText = context as sendTextForEdits
+            sendText = context as ButtonClickListener
         } catch (e: Exception) {
             Toast.makeText(context, "IMPL INTERFACE", Toast.LENGTH_LONG).show()
         }
@@ -52,7 +56,7 @@ class MainFragment : Fragment() {
 
     private fun sendThisText() {
         goToNextBtn.setOnClickListener {
-            sendText?.onSave(editText.text.toString())
+            sendText?.onClick(editText.text.toString())
         }
     }
 

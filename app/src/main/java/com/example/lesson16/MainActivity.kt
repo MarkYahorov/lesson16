@@ -8,11 +8,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
-
-class MainActivity : AppCompatActivity(), MainFragment.sendTextForEdits {
+class MainActivity : AppCompatActivity(), MainFragment.ButtonClickListener {
 
     private lateinit var toolbar: Toolbar
     private lateinit var recycler: RecyclerView
@@ -36,15 +36,13 @@ class MainActivity : AppCompatActivity(), MainFragment.sendTextForEdits {
         super.onStart()
         setToolbar()
         setRecycler()
-        ssd()
-        supportFragmentManager
-            .beginTransaction()
-            .add(R.id.some_container, MainFragment())
-            .commit()
+        createDrawer()
+        replaceTheFragment(MainFragment(), MainFragment.TAG)
     }
 
     private fun setToolbar() {
         setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
     }
 
     private fun setRecycler() {
@@ -60,22 +58,17 @@ class MainActivity : AppCompatActivity(), MainFragment.sendTextForEdits {
             )
             adapter = NavDrawerAdapter(list,
                 OnClick = {
-                    when (it) {
-                        list[0] -> supportFragmentManager
-                            .beginTransaction()
-                            .replace(R.id.some_container, MainFragment())
-                            .commit()
-                        list[1] -> supportFragmentManager
-                            .beginTransaction()
-                            .replace(R.id.some_container, SettingsFragment())
-                            .commit()
+                    if (list[0] == it) {
+                        replaceTheFragment(MainFragment(), MainFragment.TAG)
+                    } else {
+                        replaceTheFragment(SettingsFragment(), "settingsFragment")
                     }
                     onBackPressed()
                 })
         }
     }
 
-    private fun ssd() {
+    private fun createDrawer() {
         toggle = ActionBarDrawerToggle(
             this,
             drLayout,
@@ -83,6 +76,9 @@ class MainActivity : AppCompatActivity(), MainFragment.sendTextForEdits {
             R.string.navigation_drawer_open,
             R.string.navigation_drawer_close
         )
+        toggle.setToolbarNavigationClickListener {
+            onBackPressed()
+        }
         drLayout.addDrawerListener(toggle)
     }
 
@@ -100,24 +96,39 @@ class MainActivity : AppCompatActivity(), MainFragment.sendTextForEdits {
         return toggle.onOptionsItemSelected(item) || super.onOptionsItemSelected(item);
     }
 
-    // желательно для хорошего UX
     override fun onBackPressed() {
         if (drLayout.isDrawerVisible(GravityCompat.START)) {
             drLayout.closeDrawer(GravityCompat.START)
             return
         }
-        super.onBackPressed()
+
+        if (supportFragmentManager.backStackEntryCount > 1) {
+            supportFragmentManager.popBackStackImmediate()
+            updateToolbarBtn()
+        } else {
+            super.onBackPressed()
+        }
     }
 
-    override fun onSave(string: String) {
+    override fun onClick(string: String) {
         val bundle = Bundle()
         val rightTextFragment = RightTextFragment()
         bundle.putString("THIS", string)
         rightTextFragment.arguments = bundle
-        supportFragmentManager
-            .beginTransaction()
-            .replace(R.id.some_container, rightTextFragment)
-            .commit()
+        replaceTheFragment(rightTextFragment, "rightTextFragment")
     }
 
+    private fun replaceTheFragment(fragment: Fragment, tag: String) {
+        supportFragmentManager
+            .beginTransaction()
+            .replace(R.id.some_container, fragment, tag)
+            .addToBackStack(null)
+            .commit()
+        supportFragmentManager.executePendingTransactions()
+        updateToolbarBtn()
+    }
+
+    private fun updateToolbarBtn() {
+        toggle.isDrawerIndicatorEnabled = supportFragmentManager.backStackEntryCount <= 1
+    }
 }
